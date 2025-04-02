@@ -1,0 +1,249 @@
+// async function handleAnalyze() {
+  //   if (!imageSrc) {
+  //     alert("No image selected!");
+  //     return;
+  //   }
+  //   if (viewType === "front") {
+  //     await doPerspectiveTransform();
+  //   } else {
+  //     setWarpedImageSrc(imageSrc);
+  //   }
+
+  //   if (!warpedImageSrc) return;
+
+  //   const formData = new FormData();
+  //   const roofImageBlob = await fetch(warpedImageSrc).then((r) => r.blob());
+  //   formData.append("roofImage", roofImageBlob);
+
+  //   try {
+  //     const response = await fetch("/api/process-roof", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+  //     const data = await response.json();
+
+  //     if (data.result) {
+  //       const jsonStart = data.result.indexOf("[");
+  //       const jsonEnd = data.result.lastIndexOf("]");
+  //       const jsonString = data.result.substring(jsonStart, jsonEnd + 1);
+  //       const obstacleArray: Obstacle[] = JSON.parse(jsonString);
+
+  //       setObstacles(obstacleArray);
+  //       setIsRoof(data.result.toLowerCase().includes("yes"));
+  //       buildGridCells(obstacleArray);
+  //     }
+  //   } catch (error) {
+  //     console.error("API Error:", error);
+  //     alert("Error processing image.");
+  //   }
+  // }
+
+  // // Perspective transform function using OpenCV.js
+  // async function doPerspectiveTransform() {
+  //   const srcCanvas = sourceCanvasRef.current;
+  //   const dstCanvas = transformCanvasRef.current;
+  //   if (!srcCanvas || !dstCanvas) return;
+
+  //   const srcImg = cv.imread(srcCanvas);
+  //   const dstImg = new cv.Mat();
+
+  //   const srcCorners = cv.matFromArray(
+  //     4,
+  //     1,
+  //     cv.CV_32FC2,
+  //     [50, 50, 450, 40, 470, 300, 70, 320]
+  //   );
+
+  //   const dstCorners = cv.matFromArray(
+  //     4,
+  //     1,
+  //     cv.CV_32FC2,
+  //     [0, 0, 400, 0, 400, 300, 0, 300]
+  //   );
+
+  //   const M = cv.getPerspectiveTransform(srcCorners, dstCorners);
+  //   cv.warpPerspective(srcImg, dstImg, M, new cv.Size(400, 300));
+
+  //   cv.imshow(dstCanvas, dstImg);
+
+  //   srcImg.delete();
+  //   dstImg.delete();
+  //   M.delete();
+  //   srcCorners.delete();
+  //   dstCorners.delete();
+  //   dstCanvas.toBlob((blob) => {
+  //     if (blob) {
+  //       const blobURL = URL.createObjectURL(blob);
+  //       setWarpedImageSrc(blobURL);
+  //     }
+  //   });
+  // }
+
+  // useEffect(() => {
+  //   if (!warpedImageSrc) return;
+  //   initThreeScene();
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [warpedImageSrc, obstacles, gridCells, roofSlope, timeOfDay]);
+
+  // function buildGridCells(obstacleArray: Obstacle[]) {
+  //   const tCanvas = transformCanvasRef.current;
+  //   if (!tCanvas) return;
+  //   const w = tCanvas.width;
+  //   const h = tCanvas.height;
+
+  //   const meterPerPixelX = roofLength / w;
+  //   const meterPerPixelY = roofWidth / h;
+
+  //   const cellMeterSize = 1;
+  //   const cellPxWidth = cellMeterSize / meterPerPixelX;
+  //   const cellPxHeight = cellMeterSize / meterPerPixelY;
+
+  //   const newGrid: GridCell[] = [];
+  //   for (let y = 0; y < h; y += cellPxHeight) {
+  //     for (let x = 0; x < w; x += cellPxWidth) {
+  //       const intersectsObstacle = obstacleArray.some((obj) => {
+  //         return (
+  //           x < obj.x &&
+  //           x + cellPxWidth > obj.x &&
+  //           y < obj.y &&
+  //           y + cellPxHeight > obj.y
+  //         );
+  //       });
+  //       const sunlightScore = calculateSunlightScore(x, y);
+  //       newGrid.push({
+  //         x,
+  //         y,
+  //         w: cellPxWidth,
+  //         h: cellPxHeight,
+  //         blocked: intersectsObstacle,
+  //         sunlightScore: sunlightScore,
+  //       });
+  //     }
+  //   }
+  //   setGridCells(newGrid);
+  // }
+
+  // function calculateSunlightScore(x: number, y: number): number {
+  //   const { lat, lon } = location;
+  //   const times = SunCalc.getTimes(new Date(), lat, lon);
+
+  //   const currentTime = new Date();
+  //   currentTime.setHours(timeOfDay);
+  //   const sunPosition = SunCalc.getPosition(currentTime, lat, lon);
+
+  //   const sunAngle = sunPosition.altitude;
+  //   const roofAngle = THREE.MathUtils.degToRad(roofSlope);
+
+  //   const sunlightScore = Math.max(0, Math.cos(sunAngle - roofAngle));
+  //   return sunlightScore;
+  }
+
+
+
+  // const initThreeScene = useCallback(() => {
+  //   const container = threeContainerRef.current;
+  //   if (!container) return;
+
+  //   while (container.firstChild) {
+  //     container.removeChild(container.firstChild);
+  //   }
+
+  //   const scene = new THREE.Scene();
+  //   const camera = new THREE.PerspectiveCamera(
+  //     45,
+  //     container.clientWidth / container.clientHeight,
+  //     0.1,
+  //     2000
+  //   );
+  //   camera.position.set(0, -600, 600);
+  //   camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  //   const renderer = new THREE.WebGLRenderer({ antialias: true });
+  //   renderer.setSize(container.clientWidth, container.clientHeight);
+  //   container.appendChild(renderer.domElement);
+
+  //   const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  //   scene.add(ambientLight);
+
+  //   const textureLoader = new THREE.TextureLoader();
+  //   const roofTexture = textureLoader.load(
+  //     "https://cdn.pixabay.com/photo/2024/02/24/10/48/solar-panels-8593759_640.png"
+  //   );
+
+  //   const tCanvas = transformCanvasRef.current;
+  //   if (!tCanvas) return;
+  //   const tw = tCanvas.width;
+  //   const th = tCanvas.height;
+
+  //   const meterPerPixelX = roofLength / tw;
+  //   const meterPerPixelY = roofWidth / th;
+
+  //   const planeGeometry = new THREE.PlaneGeometry(roofLength, roofWidth);
+  //   const planeMaterial = new THREE.MeshBasicMaterial({ map: roofTexture });
+  //   const roofPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+  //   roofPlane.rotation.x = -Math.PI / 2 + THREE.MathUtils.degToRad(roofSlope);
+  //   roofPlane.position.x = roofLength / 2;
+  //   roofPlane.position.z = roofWidth / 2;
+  //   scene.add(roofPlane);
+
+  //   obstacles.forEach((obj) => {
+  //     const boxW = 1;
+  //     const boxH = 1;
+
+  //     const boxGeom = new THREE.BoxGeometry(boxW, 1, boxH);
+  //     const boxMat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+  //     const boxMesh = new THREE.Mesh(boxGeom, boxMat);
+
+  //     boxMesh.position.x = obj.x * meterPerPixelX;
+  //     boxMesh.position.z = obj.y * meterPerPixelY;
+  //     boxMesh.position.y = 0.5;
+  //     scene.add(boxMesh);
+  //   });
+
+  //   const loader = new GLTFLoader();
+  //   loader.load("/solar_panel/scene.gltf", function (gltf: any) {
+  //     const solarPanelModel = gltf.scene;
+  //     solarPanelModel.scale.set(0.1, 0.1, 0.1);
+
+  //     gridCells.forEach((cell) => {
+  //       if (cell.blocked) return;
+  //       const panel = solarPanelModel.clone();
+  //       panel.position.x = (cell.x + cell.w / 2) * meterPerPixelX;
+  //       panel.position.z = (cell.y + cell.h / 2) * meterPerPixelY;
+  //       panel.position.y = 0.5;
+  //       panel.rotation.x = roofPlane.rotation.x;
+  //       scene.add(panel);
+
+  //       if (sunlightScoreVisible) {
+  //         const color = new THREE.Color().setHSL(cell.sunlightScore, 1, 0.5);
+  //         const cellGeom = new THREE.PlaneGeometry(
+  //           cell.w * meterPerPixelX,
+  //           cell.h * meterPerPixelY
+  //         );
+  //         const cellMat = new THREE.MeshLambertMaterial({
+  //           color: color,
+  //           transparent: true,
+  //           opacity: 0.4,
+  //         });
+  //         const cellMesh = new THREE.Mesh(cellGeom, cellMat);
+  //         cellMesh.rotation.x = -Math.PI / 2;
+  //         cellMesh.position.x = (cell.x + cell.w / 2) * meterPerPixelX;
+  //         cellMesh.position.z = (cell.y + cell.h / 2) * meterPerPixelY;
+  //         scene.add(cellMesh);
+  //       }
+  //     });
+  //   });
+
+  //   function animate() {
+  //     requestAnimationFrame(animate);
+  //     renderer.render(scene, camera);
+  //   }
+  //   animate();
+  // }, [
+  //   roofLength,
+  //   roofWidth,
+  //   roofSlope,
+  //   obstacles,
+  //   gridCells,
+  //   sunlightScoreVisible,
+  // ]);
