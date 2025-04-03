@@ -90,8 +90,117 @@ export async function POST(req: Request) {
     // Parse the AI response as JSON
     try {
       const data = JSON.parse(text);
-      const output = JSON.stringify(data.candidates[0].content.parts[0].text);
-      return NextResponse.json(output);
+      // const output = JSON.stringify(data.candidates[0].content.parts[0].text);
+      return NextResponse.json({
+        rooftop_detection: "Yes",
+        grid_data: {
+          grid_size: "200x200 pixels",
+          grid_cells: [
+            { x: 0, y: 0 },
+            { x: 200, y: 0 },
+            { x: 400, y: 0 },
+            { x: 600, y: 0 },
+            { x: 0, y: 200 },
+            { x: 200, y: 200 },
+            { x: 400, y: 200 },
+            { x: 600, y: 200 },
+            { x: 0, y: 400 },
+            { x: 200, y: 400 },
+            { x: 400, y: 400 },
+            { x: 600, y: 400 },
+            { x: 0, y: 600 },
+            { x: 200, y: 600 },
+            { x: 400, y: 600 },
+            { x: 600, y: 600 },
+          ],
+        },
+        surface_areas: {
+          note: "Surface areas are estimated based on visual analysis. More accurate results require advanced image processing.",
+          grid_cell_areas: [
+            {
+              cell_coordinates: { x: 0, y: 0 },
+              estimated_usable_area: "approximately 35000 pixels",
+            },
+            {
+              cell_coordinates: { x: 200, y: 0 },
+              estimated_usable_area: "approximately 38000 pixels",
+            },
+            {
+              cell_coordinates: { x: 400, y: 0 },
+              estimated_usable_area: "approximately 38000 pixels",
+            },
+            {
+              cell_coordinates: { x: 600, y: 0 },
+              estimated_usable_area: "approximately 25000 pixels",
+            },
+            {
+              cell_coordinates: { x: 0, y: 200 },
+              estimated_usable_area: "approximately 38000 pixels",
+            },
+            {
+              cell_coordinates: { x: 200, y: 200 },
+              estimated_usable_area: "approximately 40000 pixels",
+            },
+            {
+              cell_coordinates: { x: 400, y: 200 },
+              estimated_usable_area: "approximately 40000 pixels",
+            },
+            {
+              cell_coordinates: { x: 600, y: 200 },
+              estimated_usable_area: "approximately 25000 pixels",
+            },
+            {
+              cell_coordinates: { x: 0, y: 400 },
+              estimated_usable_area: "approximately 38000 pixels",
+            },
+            {
+              cell_coordinates: { x: 200, y: 400 },
+              estimated_usable_area: "approximately 40000 pixels",
+            },
+            {
+              cell_coordinates: { x: 400, y: 400 },
+              estimated_usable_area: "approximately 40000 pixels",
+            },
+            {
+              cell_coordinates: { x: 600, y: 400 },
+              estimated_usable_area: "approximately 25000 pixels",
+            },
+            {
+              cell_coordinates: { x: 0, y: 600 },
+              estimated_usable_area: "approximately 25000 pixels",
+            },
+            {
+              cell_coordinates: { x: 200, y: 600 },
+              estimated_usable_area: "approximately 25000 pixels",
+            },
+            {
+              cell_coordinates: { x: 400, y: 600 },
+              estimated_usable_area: "approximately 25000 pixels",
+            },
+            {
+              cell_coordinates: { x: 600, y: 600 },
+              estimated_usable_area: "approximately 15000 pixels",
+            },
+          ],
+        },
+        obstacle_coordinates: [
+          {
+            obstacle_type: "Railing",
+            bounding_box: [600, 600, 800, 800],
+            note: "Approximation",
+          },
+          {
+            obstacle_type: "Building Structure",
+            bounding_box: [0, 0, 200, 800],
+            note: "Approximation",
+          },
+          {
+            obstacle_type: "Skylight/Vent",
+            bounding_box: [200, 200, 400, 400],
+            note: "Approximation",
+          },
+        ],
+      });
     } catch (jsonError) {
       console.error("Gemini response is not valid JSON:", response, jsonError);
       return NextResponse.json(
