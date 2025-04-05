@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^0.7.0",
     "@google/generative-ai": "^0.24.0",
     "@techstark/opencv-js": "^4.10.0-release.1",
     "next": "15.2.4",
