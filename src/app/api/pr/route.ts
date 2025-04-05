@@ -65,8 +65,6 @@ Analyze the provided rooftop image to determine suitable areas for solar panel i
       - there can be multiple onstacle and muplie solar panels
       - The analysis should prioritize maximizing the placement of solar panels, working around obstacles to achieve the highest possible coverage.
       
-     
-
     `;
 
     const parts = [
