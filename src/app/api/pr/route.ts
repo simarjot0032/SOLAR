@@ -3,17 +3,15 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-// Initialize Gemini model
 const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY });
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("roofImage");
-    const imageH = formData.get("imageHeight");
-    const imageW = formData.get("imageWidth");
+    const imageH = formData.get("roofHeight");
+    const imageW = formData.get("roofWidth");
 
-    // Check if the file is not received or not a valid Blob
     if (!file || !(file instanceof Blob)) {
       return NextResponse.json({ result: "No file received" }, { status: 400 });
     }
@@ -21,54 +19,41 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const base64Image = Buffer.from(arrayBuffer).toString("base64");
 
-    const gridData = formData.get("gridData");
-    if (!gridData || typeof gridData !== "string") {
-      return NextResponse.json(
-        { result: "No grid data received" },
-        { status: 400 }
-      );
-    }
-
-    // Prompt to the Gemini model
     const prompt = `
-Analyze the provided rooftop image to determine suitable areas for solar panel installation, maximizing the potential solar panel coverage.
 
-**Image Analysis:**
 
-1. **Rooftop Detection:** Determine if the image depicts a rooftop.
-2. **Grid Creation:** Divide the rooftop into a grid of 200x200 pixel cells.
-3. **Obstacle Detection:** Identify and locate any obstacles on the rooftop (e.g., railing, building structures, skylights/vents). Represent obstacles using bounding boxes.
-4. **Usable Surface Area Estimation:** For each grid cell, estimate the usable surface area available for solar panels, considering obstacles, and aiming to maximize the usable surface.
-5. **Potential Solar Panel Zones:** Identify and describe potential zones for solar panel installation based on available space and estimated surface areas, prioritizing maximum coverage.
 
-**Output:**
-Provide the results in JSON format without any special character like comma etc, with the following keys:
 
+
+Analyze the provided image to determine if it shows a roof that can support solar panel installation. First, verify whether the image clearly depicts a roof. Note that the roof may or may not be perfectly flat. In either case, measure the visible roof area (width and height in pixels) without adjusting these dimensions. 
+
+Assume that each solar panel has fixed, identical dimensions (pre-calculated, for example based on standard solar panel measurements) and that there is a fixed 10‑pixel gap between adjacent panels. Then, calculate the maximum possible number of solar panels that can be arranged on the roof in a grid with the 10‑pixel gap between panels. If the roof is not completely flat, provide an estimation of the maximum possible output based on the available area. In all cases, the roof’s measured width and height remain the same.
+
+Output:
+
+Provide the results in JSON format without any special characters like commas, using the following keys:
 - rooftop_detection: "Yes" or "No"
-- grid_data: 
-    -  grid_size : "200x200 pixels"
-    -  grid_cells : Array of objects with x and y coordinates for each grid cell.
-- surface_areas :
-    -  note : A note about the limitations of surface area estimation, and that the goal is to maximize the usable surface for solar panels.
-    -  grid_cell_areas : Array of objects with cell_coordinates (x, y) and estimated_usable_area for each grid cell.
-- potential_solar_panel_areas : Array of objects with area_description, bounding_box (x1, y1, x2, y2), and note for each potential area, with a focus on maximizing solar panel placement.
-- obstacle_coordinates : Array of objects with obstacle_type and bounding_box (x1, y1, x2, y2) for each obstacle.
 
-**Assumptions:**
-- The rooftop is generally flat and suitable for solar panels, except for identified obstacles.
-- The black box in the image is an annotation and not a physical obstacle.
-- The goal is to identify potential zones for solar panel installation, aiming to maximize the area covered by solar panels, not to determine the exact number or placement of individual panels.
+- max_solar_panels: the maximum number of 150x150 solar panels (with a fixed 10‑pixel gap between panels) that can be placed on the roof.
+- note: a note explaining that the analysis assumes the roof dimensions remain constant regardless of flatness and that the calculation represents the maximum possible installation based solely on the available area. If the roof is not flat, this number is an estimation.
 
-**Note:** This analysis relies on visual interpretation and may not be perfectly accurate. More advanced techniques like 3D modeling or depth information would be needed for precise results. If you didn't think that we can place any solar in image just return NO in rooftop_detection.
-- There can be multiple obstacles and multiple solar panels.
-- The analysis should prioritize maximizing the placement of solar panels, working around obstacles to achieve the highest possible coverage.
+Assumptions:
+- The roof is generally suitable for solar panel installation, even if it is not perfectly flat.
+- Solar panels are installed with fixed, identical dimensions (150x150 pixels) with a uniform 10‑pixel gap between them.
+- The visible roof area is measured as-is (in pixels), and no adjustments are made to the width and height regardless of flatness.
+- If the roof is not clearly visible or suitable, return "No" for rooftop_detection.
+
+
+Note: roof dimension in pixels are width ${imageW} and height ${imageH} also these are in pixel using this formauls 1 meter = 100 px
+
+
 `;
 
     const parts = [
       { text: prompt },
       {
         inlineData: {
-          mimeType: "image/jpg",
+          mimeType: "image/png",
           data: base64Image,
         },
       },
@@ -79,17 +64,16 @@ Provide the results in JSON format without any special character like comma etc,
       contents: parts,
     });
 
-    // Access the response
     if (result.candidates && result.candidates[0]?.content?.parts) {
       for (const part of result.candidates[0].content.parts) {
         if (part.text) {
           try {
-            // Remove code block markers
             let cleanText = part.text
               .replace("```json", "")
               .replace("```", "")
               .trim();
-            const parsedResponse = JSON.parse(cleanText); // Parse the JSON response
+            console.log(cleanText, part.text);
+            const parsedResponse = JSON.parse(cleanText);
             return NextResponse.json({ result: parsedResponse });
           } catch (jsonError) {
             console.error(

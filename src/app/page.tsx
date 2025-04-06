@@ -1,32 +1,21 @@
-/* eslint-disable prefer-const */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState } from "react";
 import * as THREE from "three";
-
-interface Obstacle {
-  boundingBox: number[];
-}
-
-interface PanelArea {
-  cell_coordinates: { x: number; y: number }; // grid coordinates (cell indices)
-  estimated_usable_area: string;
-}
-
-interface GridData {
-  grid_size: string; // e.g., "200x200 pixels"
-  grid_cells: Array<{ x: number; y: number }>;
-}
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+const CONVERSION_FACTOR = 100; // 1 meter = 100 pixels
+const SCALE_FACTOR = 0.5;
 
 const Home: React.FC = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [panelAreas, setPanelAreas] = useState<PanelArea[]>([]);
-  const [obstacles, setObstacles] = useState<Obstacle[]>([]);
-  const [gridData, setGridData] = useState<GridData | null>(null);
-  const [potentialPanelAreas, setPotentialPanelAreas] = useState<any[]>([]);
+  const [roofWidth, setRoofWidth] = useState<string>("");
+  const [roofHeight, setRoofHeight] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [apiResponse, setApiResponse] = useState<any>(null);
 
-  // Load the image from a file input
+  // Handle file input change and convert to base64 URL.
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -39,121 +28,77 @@ const Home: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  // Send image & gridData to API and parse AI response
+  // On analyze, convert the base64 URL to a Blob and append required roof dimensions.
   const handleAnalyze = async () => {
     if (!imageSrc) {
       console.error("No image selected.");
       return;
     }
+    if (!roofWidth || !roofHeight) {
+      console.error("Roof width and height are required.");
+      return;
+    }
+    const widthInMeters = parseFloat(roofWidth);
+    const heightInMeters = parseFloat(roofHeight);
+    if (isNaN(widthInMeters) || isNaN(heightInMeters)) {
+      console.error("Invalid roof dimensions provided.");
+      return;
+    }
+    const roofWidthPixels = widthInMeters * CONVERSION_FACTOR;
+    const roofHeightPixels = heightInMeters * CONVERSION_FACTOR;
+
     try {
+      setLoading(true);
       const formData = new FormData();
-      // Convert base64 data URL to Blob
+      // Convert imageSrc (base64 data URL) to Blob.
       const response = await fetch(imageSrc);
       const blob = await response.blob();
       formData.append("roofImage", blob, "roofImage.png");
 
-      // For example purposes, we send an empty gridData (or you could pre-fill one)
-      formData.append("gridData", JSON.stringify({}));
+      // Append converted roof dimensions (in pixels) to the FormData.
+      formData.append("roofWidth", roofWidthPixels.toString());
+      formData.append("roofHeight", roofHeightPixels.toString());
 
-      // Also pass image dimensions for the AI (if needed)
-      const img = new Image();
-      img.src = imageSrc;
-      img.onload = async () => {
-        const imgWidth = img.width;
-        const imgHeight = img.height;
-        formData.append("imageWidth", String(imgWidth));
-        formData.append("imageHeight", String(imgHeight));
-
-        // Call your API endpoint
-        const responseAPI = await fetch("/api/pr", {
-          method: "POST",
-          body: formData,
-        });
-        if (!responseAPI.ok) {
-          console.error("API response was not ok");
-          return;
-        }
-        const dataOG = await responseAPI.json();
-        const data = dataOG.result;
-        console.log("AI Response:", data);
-
-        // Assume AI response contains grid_data, surface_areas, potential_solar_panel_areas, and obstacles
-        if (data.rooftop_detection === "Yes") {
-          const panelAreas = Array.isArray(data.surface_areas?.grid_cell_areas)
-            ? data.surface_areas.grid_cell_areas
-            : [];
-          const potentialAreas = Array.isArray(data.potential_solar_panel_areas)
-            ? data.potential_solar_panel_areas
-            : [];
-          const obstaclesArr = Array.isArray(data.obstacle_coordinates)
-            ? data.obstacle_coordinates
-            : [];
-          const gridDataFromAI = data.grid_data;
-
-          setPanelAreas(panelAreas);
-          setObstacles(obstaclesArr);
-          setPotentialPanelAreas(potentialAreas);
-          setGridData(gridDataFromAI);
-
-          // Initialize Three.js scene using the grid data from AI
-          initThreeScene(
-            panelAreas,
-            obstaclesArr,
-            potentialAreas,
-            imgWidth,
-            imgHeight,
-            gridDataFromAI
-          );
-        } else {
-          console.error("Not a rooftop image or no suitable area found.");
-        }
-      };
+      // Call your API endpoint.
+      const responseAPI = await fetch("/api/pr", {
+        method: "POST",
+        body: formData,
+      });
+      if (!responseAPI.ok) {
+        console.error("API response was not ok");
+        setLoading(false);
+        return;
+      }
+      const data = await responseAPI.json();
+      console.log("API Response:", data);
+      setApiResponse(data);
+      setLoading(false);
+      initRoofScene(roofWidthPixels, roofHeightPixels);
     } catch (error) {
       console.error("API Error:", error);
+      setLoading(false);
     }
   };
+  const initRoofScene = (width: number, height: number) => {
+    const container = document.getElementById("three-canvas");
+    if (!container) return;
 
-  // Build the Three.js scene
-  const initThreeScene = (
-    panelAreas: PanelArea[],
-    obstacles: Obstacle[],
-    potentialAreas: any[],
-    imgWidth: number,
-    imgHeight: number,
-    gridData: GridData
-  ) => {
-    const container = document.getElementById("three-container");
-    if (!container || !imageSrc) return;
-
-    // Clear previous scene
+    // Clear previous content.
     while (container.firstChild) {
       container.removeChild(container.firstChild);
     }
 
-    // Create scene and renderer
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setClearColor(0xffffff);
     container.appendChild(renderer.domElement);
 
-    // Create an orthographic camera to fit the image plane
-    const aspect = container.clientWidth / container.clientHeight;
-    const imageAspect = imgWidth / imgHeight;
-    let left, right, top, bottom;
-    if (aspect >= imageAspect) {
-      const scale = imgHeight / 2;
-      top = scale;
-      bottom = -scale;
-      left = -scale * aspect;
-      right = scale * aspect;
-    } else {
-      const scale = imgWidth / 2;
-      left = -scale;
-      right = scale;
-      top = scale / aspect;
-      bottom = -scale / aspect;
-    }
+    const scene = new THREE.Scene();
+
+    const left = -width / 2;
+    const right = width / 2;
+    const top = height / 2;
+    const bottom = -height / 2;
     const camera = new THREE.OrthographicCamera(
       left,
       right,
@@ -162,110 +107,28 @@ const Home: React.FC = () => {
       1,
       2000
     );
-    camera.position.set(0, 200, 0);
-    camera.lookAt(0, 0, 0);
 
-    // Add ambient light
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-    scene.add(ambientLight);
+    camera.position.set(1000, 200, 0);
+    camera.lookAt(100, 500, 0);
+    scene.add(camera);
 
-    // Load the rooftop image as a texture on a plane
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      imageSrc,
-      (texture) => {
-        const planeGeometry = new THREE.PlaneGeometry(imgWidth, imgHeight);
-        const planeMaterial = new THREE.MeshBasicMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-          transparent: true,
-        });
-        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-        plane.rotation.x = -Math.PI / 2;
-        scene.add(plane);
+    const geometry = new THREE.PlaneGeometry(width, height);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xcccccc,
+      side: THREE.DoubleSide,
+    });
+    const plane = new THREE.Mesh(geometry, material);
+    plane.rotation.x = -Math.PI / 2;
+    scene.add(plane);
 
-        // --- Use Grid Data to place solar panels ---
-        // Parse grid size from gridData
-        // For example, gridData.grid_size could be "200x200 pixels" meaning the grid
-        // has cells of that size in the original image.
-        const gridSizeStr = gridData.grid_size || "200x200 pixels";
-        const [cellWidthStr, cellHeightStr] = gridSizeStr
-          .replace(" pixels", "")
-          .split("x");
-        const cellWidthPixels = parseInt(cellWidthStr.trim(), 10);
-        const cellHeightPixels = parseInt(cellHeightStr.trim(), 10);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableZoom = true;
+    controls.enableRotate = true;
+    controls.enablePan = true;
 
-        // Calculate how many grid cells across and down the image
-        const columns = Math.floor(imgWidth / cellWidthPixels);
-        const rows = Math.floor(imgHeight / cellHeightPixels);
-
-        // For each panel area, use its grid coordinates to compute a position.
-        // Assume cell_coordinates.x and cell_coordinates.y are grid indices (0-indexed).
-        const solarPanelGeometry = new THREE.BoxGeometry(
-          cellWidthPixels * 0.8,
-          1,
-          cellHeightPixels * 0.8
-        );
-        const solarPanelMaterial = new THREE.MeshBasicMaterial({
-          color: 0x000000,
-        });
-
-        panelAreas.forEach((area) => {
-          const { cell_coordinates } = area;
-          // Calculate the center of the cell in image pixel space:
-          const centerX = (cell_coordinates.x + 0.5) * cellWidthPixels;
-          const centerZ = (cell_coordinates.y + 0.5) * cellHeightPixels;
-
-          // Shift coordinates so that (0,0) is the center of the plane
-          const xPos = centerX - imgWidth / 2;
-          const zPos = centerZ - imgHeight / 2;
-
-          // Optionally, check if this cell is blocked by an obstacle
-          const isBlocked = obstacles.some((obs) => {
-            const [x1, y1, x2, y2] = obs.boundingBox || [];
-            return (
-              centerX >= x1 && centerX <= x2 && centerZ >= y1 && centerZ <= y2
-            );
-          });
-          if (!isBlocked) {
-            const panelMesh = new THREE.Mesh(
-              solarPanelGeometry,
-              solarPanelMaterial
-            );
-            panelMesh.position.set(xPos, 0.5, zPos);
-            scene.add(panelMesh);
-          }
-        });
-
-        // Place green boxes for potential solar panel areas as before.
-        potentialAreas.forEach((area) => {
-          const boundingBox = area?.bounding_box || {};
-          const { x1, y1, x2, y2 } = boundingBox;
-          if ([x1, y1, x2, y2].some((val) => val === undefined)) return;
-          const width = x2 - x1;
-          const depth = y2 - y1;
-          const boxGeometry = new THREE.BoxGeometry(width, 1, depth);
-          const boxMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            transparent: true,
-            opacity: 0.4,
-          });
-          const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
-          const centerX_box = x1 + width / 2;
-          const centerZ_box = y1 + depth / 2;
-          const xPos_box = centerX_box - imgWidth / 2;
-          const zPos_box = centerZ_box - imgHeight / 2;
-          boxMesh.position.set(xPos_box, 0.6, zPos_box);
-          scene.add(boxMesh);
-        });
-      },
-      undefined,
-      (err) => console.error("Failed to load image texture", err)
-    );
-
-    // Render loop
     const animate = () => {
       requestAnimationFrame(animate);
+      controls.update();
       renderer.render(scene, camera);
     };
     animate();
@@ -273,13 +136,54 @@ const Home: React.FC = () => {
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>Rooftop Solar Panel Analysis</h2>
+      <h2>Roof Analysis</h2>
       <input type="file" onChange={handleFileChange} />
-      <button onClick={handleAnalyze} style={{ marginLeft: 10 }}>
-        Analyze
+      <div style={{ marginTop: 10 }}>
+        <label>
+          Roof Width (meters):{" "}
+          <input
+            type="text"
+            value={roofWidth}
+            onChange={(e) => setRoofWidth(e.target.value)}
+            required
+          />
+        </label>
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <label>
+          Roof Height (meters):{" "}
+          <input
+            type="text"
+            value={roofHeight}
+            onChange={(e) => setRoofHeight(e.target.value)}
+            required
+          />
+        </label>
+      </div>
+      <button onClick={handleAnalyze} style={{ marginTop: 20 }}>
+        {loading ? "Loading..." : "Analyze"}
       </button>
+
+      {imageSrc && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Original Image</h3>
+          <img
+            src={imageSrc}
+            alt="Original Roof"
+            style={{ maxWidth: "100%" }}
+          />
+        </div>
+      )}
+
+      {apiResponse && (
+        <div style={{ marginTop: 20 }}>
+          {apiResponse.result && (
+            <h2>Maximum Solar Panels: {apiResponse.result.max_solar_panels}</h2>
+          )}
+        </div>
+      )}
       <div
-        id="three-container"
+        id="three-canvas"
         style={{
           width: "100%",
           height: "600px",
