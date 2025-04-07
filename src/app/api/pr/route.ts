@@ -9,8 +9,8 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("roofImage");
-    const imageH = formData.get("roofHeight");
-    const imageW = formData.get("roofWidth");
+    const imageH = formData.get("roofHeight") || 0;
+    const imageW = formData.get("roofWidth") || 0;
 
     if (!file || !(file instanceof Blob)) {
       return NextResponse.json({ result: "No file received" }, { status: 400 });
@@ -23,28 +23,44 @@ export async function POST(req: Request) {
 
 
 
+ Improved and Accurate Prompt:
+
+Step 1: Roof Detection
+- Carefully analyze the provided image to confirm if it clearly depicts a rooftop suitable for solar panel installation.  
+- The roof may or may not be perfectly flat, but must clearly appear as a roof structure.
+- If the rooftop is not clearly visible or identifiable as a roof, return "rooftop_detection": "No".
+
+Step 2: Roof Dimension Measurement
+- Precisely measure the visible width and height of the roof in pixels directly from the provided image.
+- Do NOT convert these dimensions into any other unit; keep them strictly in pixels.
+- If measured dimensions result in zero, unrealistic, or unclear values, explicitly indicate "rooftop_detection": "No".
+
+Step 3: Solar Panel Calculation
+- Assume each solar panel has fixed dimensions of exactly 5669 pixels width x 5669 pixels height.
+- Include a fixed 10-pixel gap between adjacent panels (horizontally and vertically).
+- Compute the maximum number of solar panels that can fit entirely within the roof's measured area without overlapping or partially extending beyond the edges.
+
+Calculation Guidance:
+- Each panel requires (5669 + 10 pixels) horizontally and (5669 + 10 pixels) vertically, except for panels at the edges of the roof which do not require an additional 10-pixel gap beyond the boundary.
+- Panels must be arranged in a rectangular grid layout to achieve maximum coverage without overlap or partial placement. 
+
+Step 4: JSON Output Format (Without commas or special characters) 
+Provide results strictly in the following JSON format:
 
 
-Analyze the provided image to determine if it shows a roof that can support solar panel installation. First, verify whether the image clearly depicts a roof. Note that the roof may or may not be perfectly flat. In either case, measure the visible roof area (width and height in pixels) without adjusting these dimensions. 
-
-Assume that each solar panel has fixed, identical dimensions (pre-calculated, for example based on standard solar panel measurements) and that there is a fixed 10‑pixel gap between adjacent panels. Then, calculate the maximum possible number of solar panels that can be arranged on the roof in a grid with the 10‑pixel gap between panels. If the roof is not completely flat, provide an estimation of the maximum possible output based on the available area. In all cases, the roof’s measured width and height remain the same.
-
-Output:
-
-Provide the results in JSON format without any special characters like commas, using the following keys:
-- rooftop_detection: "Yes" or "No"
-
-- max_solar_panels: the maximum number of 150x150 solar panels (with a fixed 10‑pixel gap between panels) that can be placed on the roof.
-- note: a note explaining that the analysis assumes the roof dimensions remain constant regardless of flatness and that the calculation represents the maximum possible installation based solely on the available area. If the roof is not flat, this number is an estimation.
-
-Assumptions:
-- The roof is generally suitable for solar panel installation, even if it is not perfectly flat.
-- Solar panels are installed with fixed, identical dimensions (150x150 pixels) with a uniform 10‑pixel gap between them.
-- The visible roof area is measured as-is (in pixels), and no adjustments are made to the width and height regardless of flatness.
-- If the roof is not clearly visible or suitable, return "No" for rooftop_detection.
+{
+"rooftop_detection": "Yes" or "No"
+"max_solar_panels": integer number of panels calculated
+"note": "This analysis assumes constant roof dimensions regardless of flatness and represents the maximum possible installation based solely on available area If the roof is not perfectly flat this number is an estimation"
+}
 
 
-Note: roof dimension in pixels are width ${imageW} and height ${imageH} also these are in pixel using this formauls 1 meter = 100 px
+Important Reminders and Clarifications:
+- Roof measurements are always provided in pixels directly; do NOT multiply by 3779 or perform unit conversions.
+- Ensure that the measurements and calculations are realistic. If they seem unrealistic or unclear, explicitly return "rooftop_detection": "No".
+- here is the width ${imageW} and height ${imageH} in pixels. If you get 0 then dont do the calcualtion just get the ide on no of solar can be place and in that case the solar size is 1.5 x 1.5 meter.
+
+This revised prompt clearly instructs the model to maintain precision, consistency, and realism in its analysis, significantly improving overall accuracy. 
 
 
 `;

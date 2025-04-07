@@ -1,0 +1,109 @@
+* {
+  padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+}
+.navbar-container {
+  box-shadow: 0 0 2px 2px rgb(217, 217, 217);
+  padding: 15px;
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  color: dodgerblue;
+  text-align: center;
+}
+.parent-container {
+  margin-top: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.roof-top-content-heading,
+label {
+  text-align: center;
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+}
+.load-image-container {
+  background: rgba(210, 244, 255, 0.639);
+  padding: 10px;
+  border-radius: 15px;
+  width: 100%;
+  max-width: 550px;
+  margin-top: 50px;
+}
+#user-roof {
+  display: none;
+}
+label {
+  color: white;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+}
+img {
+  max-width: 550px;
+  max-height: 400px;
+  width: 100%;
+  object-fit: fill;
+  margin: auto auto;
+  border-radius: 10px;
+}
+.user-upload-button {
+  background: dodgerblue;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 550px;
+  display: flex;
+  justify-content: center;
+  font-weight: 800;
+  margin-top: 10px;
+}
+.user-image-upload-message,
+.image-warning-message {
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  color: black;
+  font-size: 1rem;
+  text-align: center;
+  margin-top: 10px;
+}
+.user-image-upload-message {
+  margin-bottom: 10px;
+}
+.image-warning-message {
+  margin: 5px;
+}
+input:disabled {
+  cursor: not-allowed;
+}
+.dimension-inputs {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+input[type="number"] {
+  padding: 10px;
+  border-radius: 10px 8px;
+  border: 0;
+  margin-bottom: 10px;
+
+  width: 100%;
+}
+.dimension-heading {
+  margin: 0;
+  margin: 10px 0 5px;
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  font-size: 1rem;
+}
+.analyze-button {
+  background: dodgerblue;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 550px;
+  display: flex;
+  justify-content: center;
+  font-weight: 800;
+  margin-top: 10px;
+  color: white;
+  border: 0;
+  width: 100%;
+  cursor: pointer;
+}
