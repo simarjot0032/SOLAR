@@ -222,11 +222,11 @@ export default function Mainlogic() {
               className="user-roof-image"
             />
           )}
-          {!imageURL && (
+          {/* {!imageURL && (
             <h2 className="user-image-upload-message">
               Please Select an Image for Analyzing
             </h2>
-          )}
+          )} */}
           <div className="user-upload-button">
             <label htmlFor="user-roof">Upload File</label>
             <input
