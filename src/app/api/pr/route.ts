@@ -37,11 +37,11 @@ Step 2: Roof Dimension Measurement
 
 Step 3: Solar Panel Calculation
 - Assume each solar panel has fixed dimensions of exactly 5669 pixels width x 5669 pixels height.
-- Include a fixed 10-pixel gap between adjacent panels (horizontally and vertically).
+- Include a fixed 100-pixel gap between adjacent panels (horizontally and vertically).
 - Compute the maximum number of solar panels that can fit entirely within the roof's measured area without overlapping or partially extending beyond the edges.
 
 Calculation Guidance:
-- Each panel requires (5669 + 10 pixels) horizontally and (5669 + 10 pixels) vertically, except for panels at the edges of the roof which do not require an additional 10-pixel gap beyond the boundary.
+- Each panel requires (5669 + 100 pixels) horizontally and (5669 + 100 pixels) vertically, except for panels at the edges of the roof which do not require an additional 100-pixel gap beyond the boundary.
 - Panels must be arranged in a rectangular grid layout to achieve maximum coverage without overlap or partial placement. 
 
 Step 4: JSON Output Format (Without commas or special characters) 

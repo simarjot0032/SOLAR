@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import React, { ChangeEvent, useState } from "react";
+import React, { ChangeEvent, useState, useEffect } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import "../styles/index.scss";
@@ -17,6 +17,15 @@ export default function Mainlogic() {
   const [roofHeight, setRoofHeight] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [apiResponse, setApiResponse] = useState<any>(null);
+  const [baseColor, setBaseColor] = useState<string>("#cccccc"); // Default roof color
+  const [panelColor, setPanelColor] = useState<string>("#1e90ff"); // Default solar panel color
+
+  // Store scene configuration after API call for re-rendering on color changes.
+  const [sceneConfig, setSceneConfig] = useState<{
+    width: number;
+    height: number;
+    maxPanels: number;
+  } | null>(null);
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,11 +73,20 @@ export default function Mainlogic() {
       setApiResponse(data);
       setLoading(false);
 
-      // Call the three.js scene initializer using the result from the API.
+      // Save scene config for future updates.
+      setSceneConfig({
+        width: roofWidthPixels,
+        height: roofHeightPixels,
+        maxPanels: data.result.max_solar_panels,
+      });
+
+      // Initialize the scene with initial colors.
       initRoofScene(
         roofWidthPixels,
         roofHeightPixels,
-        data.result.max_solar_panels
+        data.result.max_solar_panels,
+        baseColor,
+        panelColor
       );
     } catch (error) {
       console.error("API Error:", error);
@@ -76,7 +94,26 @@ export default function Mainlogic() {
     }
   };
 
-  const initRoofScene = (width: number, height: number, maxPanels: number) => {
+  // Re-render three.js scene in real-time if the color options change.
+  useEffect(() => {
+    if (sceneConfig) {
+      initRoofScene(
+        sceneConfig.width,
+        sceneConfig.height,
+        sceneConfig.maxPanels,
+        baseColor,
+        panelColor
+      );
+    }
+  }, [baseColor, panelColor, sceneConfig]);
+
+  const initRoofScene = (
+    width: number,
+    height: number,
+    maxPanels: number,
+    roofBaseColor: string,
+    solarPanelColor: string
+  ) => {
     const container = document.getElementById("three-canvas");
     if (!container) return;
 
@@ -106,15 +143,15 @@ export default function Mainlogic() {
       2000
     );
 
-    // Adjust camera position and orientation as needed.
+    // Adjust camera position and orientation.
     camera.position.set(1000, 200, 0);
     camera.lookAt(0, 0, 0);
     scene.add(camera);
 
-    // Create roof plane.
+    // Create roof plane with custom base color.
     const roofGeometry = new THREE.PlaneGeometry(width, height);
     const roofMaterial = new THREE.MeshBasicMaterial({
-      color: 0xcccccc,
+      color: new THREE.Color(roofBaseColor),
       side: THREE.DoubleSide,
     });
     const roofPlane = new THREE.Mesh(roofGeometry, roofMaterial);
@@ -143,7 +180,7 @@ export default function Mainlogic() {
         const y = 1; // Slightly above the roof plane
         const panelGeometry = new THREE.PlaneGeometry(panelWidth, panelHeight);
         const panelMaterial = new THREE.MeshBasicMaterial({
-          color: 0x1e90ff,
+          color: new THREE.Color(solarPanelColor),
           side: THREE.DoubleSide,
         });
         const panel = new THREE.Mesh(panelGeometry, panelMaterial);
@@ -225,6 +262,25 @@ export default function Mainlogic() {
               />
             </div>
           </div>
+          {/* Customization options */}
+          <div className="customization-inputs">
+            <div>
+              <p className="dimension-heading">Roof Base Color</p>
+              <input
+                type="color"
+                value={baseColor}
+                onChange={(e) => setBaseColor(e.target.value)}
+              />
+            </div>
+            <div>
+              <p className="dimension-heading">Solar Panel Color</p>
+              <input
+                type="color"
+                value={panelColor}
+                onChange={(e) => setPanelColor(e.target.value)}
+              />
+            </div>
+          </div>
           <button
             className="analyze-button"
             disabled={loading || !imageFile || !roofWidth || !roofHeight}
@@ -232,6 +288,13 @@ export default function Mainlogic() {
           >
             {loading ? "Analyzing..." : "Analyze Roof"}
           </button>
+          {/* Display the max solar panels result if available */}
+          {apiResponse && apiResponse.result && (
+            <p className="result-message">
+              Maximum Solar Panels Planted:{" "}
+              {apiResponse.result.max_solar_panels}
+            </p>
+          )}
         </div>
         {/* The three.js container */}
         <div
